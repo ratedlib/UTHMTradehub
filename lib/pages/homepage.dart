@@ -8,6 +8,7 @@ import 'registersell.dart';
 import 'main.dart';
 import 'catalog.dart';
 import 'iteminfo.dart';
+import 'manageItem.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class HomePage extends StatelessWidget {
@@ -166,6 +167,19 @@ class HomePage extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const Placeholder(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.manage_accounts),
+              title: const Text('Manage Item'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManageItemsPage(),
                   ),
                 );
               },
