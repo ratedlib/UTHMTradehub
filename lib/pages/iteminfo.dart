@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'chatroom.dart';
-
+import 'report.dart';
 class ItemInfoPage extends StatelessWidget {
   final String itemId;
 
@@ -31,7 +31,7 @@ class ItemInfoPage extends StatelessWidget {
           final price = item['price'];
           final isUsed = item['isUsed'];
           final sellerId = item['sellerId'];
-          final timestamp = item['timestamp'].toDate();
+          final timestamp = item['timestamp']?.toDate();
           final category = item['category'];
           final imageUrls = List<String>.from(item['imageUrls']);
 
@@ -114,7 +114,9 @@ class ItemInfoPage extends StatelessWidget {
                         children: [
                           _buildInfoRow('Category:', category),
                           _buildInfoRow('Condition:', isUsed ? 'Used' : 'New'),
-                          _buildInfoRow('Posted on:', '${timestamp.day}-${timestamp.month}-${timestamp.year}'),
+                          _buildInfoRow('Posted on:', timestamp != null
+                              ? '${timestamp.day}-${timestamp.month}-${timestamp.year}'
+                              : 'Unknown'),
                         ],
                       ),
 
@@ -137,22 +139,23 @@ class ItemInfoPage extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // Chat Button
+                      // Chat Button
                       Center(
-                        child: ElevatedButton(
+                        child: FirebaseAuth.instance.currentUser?.uid != sellerId
+                            ? ElevatedButton(
                           onPressed: () {
-                            final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-                            if (currentUserId != null) {
-                              final chatRoomId = [currentUserId, sellerId]..sort();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChatRoomPage(
-                                    chatRoomId: chatRoomId.join('_'),
-                                    otherUserId: sellerId,
-                                  ),
+                            final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+                            final chatRoomId = [currentUserId, sellerId]..sort();
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatRoomPage(
+                                  chatRoomId: chatRoomId.join('_'),
+                                  otherUserId: sellerId,
                                 ),
-                              );
-                            }
+                              ),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
@@ -161,8 +164,36 @@ class ItemInfoPage extends StatelessWidget {
                             ),
                           ),
                           child: const Text('Chat with Seller', style: TextStyle(fontSize: 18)),
+                        )
+                            : const Text(
+                          'You are the seller of this item.',
+                          style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
                         ),
                       ),
+                      // Report Seller Button
+                      Center(
+                        child: FirebaseAuth.instance.currentUser?.uid != sellerId
+                            ? TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ReportPage(
+                                  sellerId: sellerId,
+                                  itemId: itemId,
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Report Seller',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                        )
+                            : const SizedBox(),
+                      ),
+
+
                     ],
                   ),
                 ),
@@ -179,10 +210,6 @@ class ItemInfoPage extends StatelessWidget {
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(sellerId).get();
     final sellerDoc = await FirebaseFirestore.instance.collection('sellers').doc(sellerId).get();
 
-    if (!userDoc.exists || !sellerDoc.exists) {
-      return {};
-    }
-
     return {
       'email': userDoc.data()?['email'] ?? 'Not provided',
       'fullName': sellerDoc.data()?['fullName'] ?? 'Unknown Seller',
@@ -190,7 +217,6 @@ class ItemInfoPage extends StatelessWidget {
     };
   }
 
-  /// Card-style container for grouping information
   Widget _buildCard({required List<Widget> children}) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -213,7 +239,6 @@ class ItemInfoPage extends StatelessWidget {
     );
   }
 
-  /// Information row with label and value
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),

@@ -7,6 +7,8 @@ import 'profile.dart';
 import 'registersell.dart';
 import 'main.dart';
 import 'catalog.dart';
+import 'iteminfo.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -86,7 +88,6 @@ class HomePage extends StatelessWidget {
               );
             },
           )
-
         ],
       ),
       drawer: Drawer(
@@ -94,25 +95,53 @@ class HomePage extends StatelessWidget {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: const BoxDecoration(color: Colors.blue),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'UTHM TradeHub',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Welcome, User!',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ],
+              decoration: const BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser?.uid)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  }
+
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return const Text('Welcome, User!',
+                        style: TextStyle(fontSize: 24, color: Colors.white));
+                  }
+
+                  final userData = snapshot.data!.data() as Map<String, dynamic>;
+                  final profileUrl = userData['profileImageUrl'] as String?;
+                  final userName = userData['name'] ?? 'User';
+
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Colors.white,
+                        backgroundImage: profileUrl != null
+                            ? NetworkImage(profileUrl)
+                            : const AssetImage('lib/img/defaultProfile.jpg')
+                        as ImageProvider,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '$userName',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
             ListTile(
@@ -123,7 +152,7 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const Placeholder(), // Replace with HelpPage
+                    builder: (context) => const Placeholder(),
                   ),
                 );
               },
@@ -136,7 +165,7 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const Placeholder(), // Replace with SavedItemsPage
+                    builder: (context) => const Placeholder(),
                   ),
                 );
               },
@@ -212,7 +241,7 @@ class HomePage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const CatalogPage(), // Navigate to CatalogPage
+                          builder: (context) => const CatalogPage(),
                         ),
                       );
                     },
@@ -231,16 +260,16 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Advertisement Banner Section (Horizontally scrollable)
+
             SizedBox(
-              height: 150, // Set a fixed height for the banner
+              height: 150,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    // Local Asset Image Banner
+
                     Container(
-                      width: 370, // Adjust width as per your requirement
+                      width: 370,
                       margin: const EdgeInsets.symmetric(horizontal: 8.0),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
@@ -284,11 +313,149 @@ class HomePage extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 image: const DecorationImage(
-                  image: AssetImage('lib/img/deco.png'), // Add your small banner image path here
+                  image: AssetImage('lib/img/deco.png'),
                   fit: BoxFit.cover,
                 ),
               ),
             ),
+
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 220,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('items')
+                    .orderBy('timestamp', descending: true)
+                    .limit(6)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return const Center(child: Text('Error loading items'));
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('No new items available'));
+                  }
+
+                  final items = snapshot.data!.docs;
+
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final imageUrls = List<String>.from(item['imageUrls']);
+                      final imageUrl = imageUrls.isNotEmpty ? imageUrls[0] : '';
+
+                      return Container(
+                        width: 160,
+                        margin: EdgeInsets.only(right: 12, left: index == 0 ? 16 : 0),
+                        child: Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ItemInfoPage(itemId: item.id),
+                                ),
+                              );
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12)),
+                                  child: Container(
+                                    height: 120,
+                                    width: double.infinity,
+                                    child: imageUrl.isNotEmpty
+                                        ? Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) {
+                                          return child;
+                                        } else {
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded /
+                                                  (loadingProgress.expectedTotalBytes ?? 1)
+                                                  : null,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    )
+                                        : Container(
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: Icon(Icons.image, size: 40),
+                                      ),
+                                    ),
+
+
+                                  ),
+                                ),
+                                // Item Details
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item['name'],
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'RM${item['price']}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item['category'] ?? 'No category',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+
           ],
         ),
       ),
@@ -317,7 +484,7 @@ class HomePage extends StatelessWidget {
         onTap: (index) {
           switch (index) {
             case 0:
-              break; // Home already loaded
+              break;
             case 1:
               Navigator.push(
                 context,
@@ -327,7 +494,7 @@ class HomePage extends StatelessWidget {
               );
               break;
             case 2:
-              _navigateToSellPage(context); // Sell with seller check
+              _navigateToSellPage(context);
               break;
             case 3:
               Navigator.push(

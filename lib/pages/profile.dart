@@ -213,8 +213,6 @@ class _ProfilePageState extends State<ProfilePage> {
         },
       ),
 
-      // Bottom Navigation Bar
-      // Inside the ProfilePage
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.blue,

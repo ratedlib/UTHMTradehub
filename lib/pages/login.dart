@@ -27,14 +27,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       try {
-        // Attempt to sign in the user with FirebaseAuth
+
         UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
         User? user = userCredential.user;
 
-        // Check if email is verified
+
         if (user != null && user.emailVerified) {
           // Navigate to HomePage if email is verified
           ScaffoldMessenger.of(context).showSnackBar(
@@ -45,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
             MaterialPageRoute(builder: (context) => HomePage()),
           );
         } else {
-          // Email is not verified, show message or navigate to EmailVerifyPage
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please verify your email first.')),
           );
@@ -56,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
       } on FirebaseAuthException catch (e) {
-        // Display error message if login fails
         setState(() {
           _errorMessage = e.message;
         });

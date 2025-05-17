@@ -4,6 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';  // Import Firebase Auth
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'profile.dart';
+import 'catalog.dart';
+import 'sell.dart';
 
 class SellPage extends StatefulWidget {
   const SellPage({Key? key}) : super(key: key);
@@ -190,6 +193,53 @@ class _SellPageState extends State<SellPage> {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'Search',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_circle),
+            label: 'Sell',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              break; // Home already loaded
+            case 1:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CatalogPage(), // Navigate to CatalogPage
+                ),
+              );
+              break;
+            case 2:
+              break;
+            case 3:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfilePage(),
+                ),
+              );
+              break;
+          }
+        },
       ),
     );
   }

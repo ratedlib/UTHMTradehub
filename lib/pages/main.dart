@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'login.dart';
 import 'register.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'sell.dart'; // Import the SellPage
+import 'sell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,18 +32,18 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>( // Check for user authentication state
+    return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // Show a loading spinner while checking authentication state
+
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasData) {
-          // User is logged in, navigate to HomePage
+
           return const HomePage();
         }
-        // User is not logged in, show LoginScreen
+
         return const LoginScreen();
       },
     );
